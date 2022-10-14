@@ -71,10 +71,13 @@ export function activate(context: ExtensionContext) {
 
 function registerCommandHandlersFor(client: LanguageClient, context: ExtensionContext) {
   const replDecorationType = window.createTextEditorDecorationType({
-    border: '2px inset darkgray',
-    borderRadius: '5px',
+//    border: '2px inset darkgray',
+    border: '10px inset blue',
+//    borderRadius: '5px',
+    borderRadius: '50px',
     after: {
-      color: 'darkgray',
+//      color: 'darkgray',
+      color: 'read',
     },
     rangeBehavior: DecorationRangeBehavior.ClosedClosed
   });
@@ -95,7 +98,8 @@ function registerCommandHandlersFor(client: LanguageClient, context: ExtensionCo
               const code = res as string;
               return {
                 hover: new MarkdownString().appendCodeblock(code, 'idris'),
-                preview: code
+//                preview: code
+                preview: code + '<<<<<<<<<'
               };
             },
             (e) => {
@@ -115,7 +119,8 @@ function registerCommandHandlersFor(client: LanguageClient, context: ExtensionCo
                 hoverMessage: res.hover,
                 renderOptions: {
                   after: {
-                    contentText: ' => ' + inlineReplPreviewFor(res.preview) + ' ',
+//                    contentText: ' => ' + inlineReplPreviewFor(res.preview) + ' ',
+                    contentText: ' ======> ' + inlineReplPreviewFor(res.preview) + ' ',
                   },
                 }
               }]
@@ -132,6 +137,9 @@ function inlineReplPreviewFor(res: string) {
   const firstLine = lines[0];
   const ellipsis = '…';
   if (lines.length > 1) {
+    if (lines.length < maxPreviewLength) {
+      return firstLine.substring(0, maxPreviewLength);
+    }
     return firstLine.substring(0, maxPreviewLength) + ellipsis;
   }
   return firstLine.length > maxPreviewLength
