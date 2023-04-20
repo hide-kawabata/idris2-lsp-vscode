@@ -69,6 +69,24 @@ export function activate(context: ExtensionContext) {
   registerCommandHandlersFor(client, context);
 }
 
+function parse_selection(code: string, ch: number): number[]{
+
+  const flag = code.split(' ');
+
+  var res = new Array(flag.length);
+  var sum = 0;
+  for(var b = 0; b < flag.length; b++) {
+    res[b] = 0;
+  }
+
+  for(var i = 0; i < flag.length; i++) {
+    res[i] = sum + ch;
+    sum = sum + flag[i].length + 1;
+  }
+
+  return res
+};
+
 function registerCommandHandlersFor(client: LanguageClient, context: ExtensionContext) {
   const replDecorationType = window.createTextEditorDecorationType({
 //    border: '2px inset darkgray',
@@ -121,6 +139,189 @@ function registerCommandHandlersFor(client: LanguageClient, context: ExtensionCo
                   after: {
 //                    contentText: ' => ' + inlineReplPreviewFor(res.preview) + ' ',
                     contentText: ' ======> ' + inlineReplPreviewFor(res.preview) + ' ',
+                  },
+                }
+              }]
+            );
+          });
+      }
+    )
+  );
+  context.subscriptions.push(
+    commands.registerTextEditorCommand(
+      'idris2-lsp.repl.minamiyama',
+      (editor: TextEditor, _edit: TextEditorEdit, customCode) => {
+        const code: string = customCode || editor.document.getText(editor.selection);
+        const uri = editor.document.uri.fsPath;
+        const pos = editor.selection.start;
+        const ln = pos.line;
+        const ch = pos.character;
+        const tops: number[] = parse_selection(code, ch);
+        var types: string[] = [];
+        if (code.length == 0) {
+          editor.setDecorations(replDecorationType, []);
+          return;
+        }
+
+        const f = (tops: number[], i: number, max: number) => {
+          if (i < max) {
+            client
+            .sendRequest('textDocument/hover', {textDocument: {uri: "file://" + uri}, position: {line: ln, character: tops[i]}})
+            .then((my_res: any) => {
+              types.push(String(my_res.contents.value.split("\n")[1].trim()));
+              f(tops, i+1, max);
+            })
+          } else {
+            var res = "";
+            var res2 = "";
+            var spawn = require('child_process').spawn;
+            var prc = spawn('/Users/kawabata/MNMYM/20230105/echo', types); // external command
+            prc.stdout.setEncoding('utf8');
+            prc.stdout.on('data', function (data) {
+              var str = data.toString();
+              res = str;
+              res2 = str;
+            });
+            prc.on('close', function (code) {
+              editor.setDecorations(
+                replDecorationType, [{
+                  range: editor.selection,
+                  hoverMessage: res,
+                  renderOptions: { // for debuggin
+                    after: { contentText: ` ===> res = ${res2.replace(/\n/g, ', ')}, types = ${types} ` }
+                  }
+                }]
+              )
+            });
+          }
+        };
+        f(tops, 0, tops.length);
+
+
+/*
+//        for (var i = 0; i < tops.length; i++) {
+          client
+          .sendRequest('textDocument/hover', {textDocument: {uri: "file://" + uri},
+                                              position: {line: ln, character: tops[0]}})
+          .then(
+            (my_res: any) => {
+              types.push(String(my_res.contents.value.split("\n")[1].trim()));
+              client
+              .sendRequest('textDocument/hover', {textDocument: {uri: "file://" + uri},
+                                                  position: {line: ln, character: tops[1]}})
+              .then(
+                (my_res: any) => {
+                  types.push(String(my_res.contents.value.split("\n")[1].trim()));
+                  client
+                  .sendRequest('textDocument/hover', {textDocument: {uri: "file://" + uri},
+                                                      position: {line: ln, character: tops[2]}})
+                  .then(
+                    (my_res: any) => {
+                      types.push(String(my_res.contents.value.split("\n")[1].trim()));
+
+                      editor.setDecorations(
+                        replDecorationType, [{
+                          range: editor.selection,
+                          hoverMessage: `${types}`,
+                          renderOptions: {
+                            after: {
+                                contentText: ` ======> typs = ${types}, tops.length = ${tops.length}, laststr = ${laststr} `,
+                            },
+                          }
+                        }]
+                      )      
+                    }
+                  )
+                }
+              );
+            }
+          );
+*/
+/*
+          editor.setDecorations(
+          replDecorationType, [{
+            range: editor.selection,
+            hoverMessage: `${types.length}`,
+//            hoverMessage: `${tops.length}`,
+//            hoverMessage: "hello",
+            renderOptions: {
+              after: {
+                  contentText: ` ======> typs = ${types}, tops.length = ${tops.length}, laststr = ${laststr} `,
+              },
+            }
+          }]
+        )
+*/
+      }
+    )
+  );
+  context.subscriptions.push(
+    commands.registerTextEditorCommand(
+      'idris2-lsp.repl.eval2',
+      (editor: TextEditor, _edit: TextEditorEdit, customCode) => {
+        const code: string = customCode || editor.document.getText(editor.selection);
+        const uri = editor.document.uri.fsPath;
+        const pos = editor.selection.start;
+        const ln = pos.line;
+        const ch = pos.character;
+        const tops: number[] = parse_selection(code, ch);
+        var types: string[] = [];
+        //        const pos = editor.document.positionAt(100);
+        if (code.length == 0) {
+          // clear decorations
+          editor.setDecorations(replDecorationType, []);
+          return;
+        }
+/*
+        poss: int[] = parse_selection(code, pos) // セレクション内の単語の位置を調べる
+        foreach (...poss... ) {
+           res = client.sendRequest(...); // LSP への問い合わせ
+           tys.append(res.value); // LSP から得られた型情報を集める
+        }
+        const tys2: string = mnmym_special(code, tys);
+        return {
+          hover: new MarkdownString().appendCodeblock(tys2, 'idris2'),
+          preview: tys2
+        };
+      }
+    )
+  )
+*/
+        client
+//          .sendRequest("workspace/executeCommand", { command: "repl", arguments: [code] })
+//          .sendRequest("workspace/executeCommand", { command: "repl", arguments: [":t " + code] })
+//          .sendRequest("textDocument/hover", { command: "hover", arguments: pos})
+//          .sendRequest("textDocument/hover", { textDocument: { uri : "file://" + uri }, position: { line: 23, character: 16}})
+          .sendRequest("textDocument/hover", { textDocument: { uri : "file://" + uri }, position: { line: ln, character: ch}})
+          .then(
+            (res: any) => {
+              const code0 = (res.contents.value) as string;
+              const code = code0.split("\n")[1].trim();
+              return {
+                hover: new MarkdownString().appendCodeblock(code, 'idris'),
+                preview: code + '<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+              };
+            },
+            (e) => {
+              const error = `${e}`;
+              return {
+                hover: new MarkdownString().appendText(error),
+                preview: error
+              };
+            }
+          )
+          .then((res) => {
+            console.log(`>${res.preview}<`);
+            editor.setDecorations(
+              replDecorationType,
+              [{
+                range: editor.selection,
+//                hoverMessage: "(((" + res.hover + ")))",
+//                hoverMessage: "(((" + inlineReplPreviewFor(res.preview) + ")))",
+                hoverMessage: "(((" + res.hover.value + ")))",
+                renderOptions: {
+                  after: {
+                      contentText: ` ==========================> ${res.preview} `,
                   },
                 }
               }]

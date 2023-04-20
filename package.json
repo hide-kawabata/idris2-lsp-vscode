@@ -3,7 +3,8 @@
 	"description": "Idris2 client for the language server protocol",
 	"author": "Rodrigo B. de Oliveira",
 	"license": "MIT",
-	"version": "0.6.0",
+	"version_org": "0.6.0",
+	"version": "0.99.99",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/bamboo/idris2-lsp-vscode"
@@ -28,6 +29,14 @@
 				{
 					"command": "idris2-lsp.repl.eval",
 					"when": "editorLangId == idris"
+				},
+				{
+					"command": "idris2-lsp.repl.minamiyama",
+					"when": "editorLangId == idris"
+				},
+				{
+					"command": "idris2-lsp.repl.eval2",
+					"when": "editorLangId == idris"
 				}
 			]
 		},
@@ -35,12 +44,28 @@
 			{
 				"key": "ctrl+shift+alt+enter",
 				"command": "idris2-lsp.repl.eval"
+			},
+			{
+				"key": "ctrl+alt+enter",
+				"command": "idris2-lsp.repl.minamiyama"
 			}
 		],
 		"commands": [
 			{
 				"command": "idris2-lsp.repl.eval",
 				"title": "Idris: Evaluate selection",
+				"enablement": "editorLangId == idris",
+				"icon": "$(preview)"
+			},
+			{
+				"command": "idris2-lsp.repl.minamiyama",
+				"title": "Idris: MINAMIYAMA",
+				"enablement": "editorLangId == idris",
+				"icon": "$(preview)"
+			},
+			{
+				"command": "idris2-lsp.repl.eval2",
+				"title": "Idris: Evaluate selection [2]",
 				"enablement": "editorLangId == idris",
 				"icon": "$(preview)"
 			}
